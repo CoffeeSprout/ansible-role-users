@@ -1,0 +1,6 @@
+---
+# defaults file for coffeesprout.users
+
+users: []
+
+users_sudoersd_file: "{{ sudoersd_location }}/managed"

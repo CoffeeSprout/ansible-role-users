@@ -1,0 +1,19 @@
+---
+# tasks file for coffeesprout.users
+
+- name: setup users {{ _user.name }}
+  user:
+    name: "{{ _user.name }}"
+    group: "{{ _user.group | default(omit) }}"
+  tags:
+  - users
+
+- name: setup authorized_keys for {{ _user.name }}
+  authorized_key:
+    user: "{{ _user.name }}"
+    state: present
+    key: "{{ _user.key }}"
+  when: '_user.key is defined'
+  tags:
+  - authorized_keys
+

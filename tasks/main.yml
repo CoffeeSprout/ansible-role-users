@@ -1,0 +1,25 @@
+---
+
+- name: ensure OS specifics are included
+  include_vars: "{{ item }}"
+  with_first_found:
+  - "{{ ansible_os_family }}.yml"
+
+- name: create users
+  include_tasks: user.yml
+  vars:
+    _user: "{{ item }}"
+  with_items:
+  - "{{ users }}"
+  tags:
+  - users
+  - authorized_keys
+
+- name: manage sudo for users
+  template:
+    src: managed.j2
+    dest: "{{ users_sudoersd_file }}"
+    validate: 'visudo -cf %s'
+  tags:
+  - users
+  - sudo

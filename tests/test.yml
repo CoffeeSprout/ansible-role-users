@@ -1,0 +1,11 @@
+---
+- hosts: all
+  become: True
+  roles:
+    - role: coffeesprout.users
+      users:
+      - name: normal-user
+      - name: admin
+        key: "https://github.com/bvansomeren.keys"
+      sudo_users:
+      - admin1
