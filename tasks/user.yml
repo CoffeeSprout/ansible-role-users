@@ -5,6 +5,7 @@
   user:
     name: "{{ _user.name }}"
     group: "{{ _user.group | default(omit) }}"
+    system: "{{ _user.system | default(omit) }}"
   tags:
   - users
 

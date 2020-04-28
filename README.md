@@ -16,14 +16,16 @@ Role Variables
 
 A list of users to be created on the system. For example:
 
-users:
-- name: admin
-  key: "{{lookup('file', 'admin.pub')}}"
-- name: barry
-  key: "https://github.com/barry.keys"
-- name: systemuser
-  system: True
+    users:
+    - name: admin
+      key: "{{lookup('file', 'admin.pub')}}"
+    - name: barry
+      key: "https://github.com/barry.keys"
+    - name: systemuser
+      system: True  
 
+It's recommended you use the first format (lookup the pub file) and check the files in together with your playbook.
+  
 
     users_sudoersd_file: "{{ sudoersd_location }}/managed"
     
