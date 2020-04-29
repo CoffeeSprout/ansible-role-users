@@ -25,6 +25,10 @@ A list of users to be created on the system. For example:
       system: True  
 
 It's recommended you use the first format (lookup the pub file) and check the files in together with your playbook.
+
+    sudo_users: []
+    
+A simple list of strings which users should be root on the system. This manages an included file (see below) with the added advantage that we don't have to add or remove from the wheel group. It's generally recommended you keep at least one user in the wheel group, for example the user used to provision the server with.
   
 
     users_sudoersd_file: "{{ sudoersd_location }}/managed"

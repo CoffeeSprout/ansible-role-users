@@ -1,6 +1,10 @@
 ---
 # defaults file for coffeesprout.users
 
+#Expects a user object with at least a name
 users: []
+
+#Expects a list of usernames
+sudo_users: []
 
 users_sudoersd_file: "{{ sudoersd_location }}/managed"
