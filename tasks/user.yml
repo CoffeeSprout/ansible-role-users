@@ -6,6 +6,9 @@
     name: "{{ _user.name }}"
     group: "{{ _user.group | default(omit) }}"
     system: "{{ _user.system | default(omit) }}"
+    shell: "{{ _user.shell | default(omit) }}"
+    home: "{{ _user.home | default(omit) }}"
+    password: "{{ _user.password | default(omit) }}"
   tags:
   - users
 
@@ -18,3 +21,11 @@
   tags:
   - authorized_keys
 
+- name: setup authorized_keys from pub in files for {{ _user.name }}
+  authorized_key:
+    user: "{{ _user.name }}"
+    state: present
+    key: "{{ lookup('file', _user.name+'.pub') }}"
+  when: '_user.key is not defined and _user.ssh'
+  tags:
+  - authorized_keys
