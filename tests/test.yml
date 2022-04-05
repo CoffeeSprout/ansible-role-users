@@ -1,5 +1,5 @@
 ---
-- hosts: all
+- hosts: lab
   become: True
   roles:
     - role: coffeesprout.users
@@ -9,3 +9,16 @@
         key: "https://github.com/bvansomeren.keys"
       sudo_users:
       - admin1
+
+- hosts: lab
+  become: True
+  roles:
+  - role: coffeesprout.users
+    users:
+    - name: barry
+      key: "https://github.com/barry.keys"
+    - name: systemuser
+      system: True
+    - name: differentkeyeduser
+      key: "https://github.com/barry.keys"
+      pubkey_location: "/etc/ssh/user_keys/differentkeyeduser.pub"
