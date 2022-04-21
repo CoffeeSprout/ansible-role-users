@@ -7,18 +7,28 @@
       - name: normal-user
       - name: admin
         key: "https://github.com/bvansomeren.keys"
+      - name: barry2
+        ssh: yes
+        lock_key: yes
+        key_options: "environment=\"SUPER=man\""
       sudo_users:
       - admin1
 
 - hosts: lab
   become: True
+  pre_tasks:
+  - file:
+      path: "/etc/ssh/user_keys/"
+      state: directory
+      owner: root
+      mode: '0705'
   roles:
   - role: coffeesprout.users
     users:
     - name: barry
-      key: "https://github.com/barry.keys"
+      key: "https://github.com/bvansomeren.keys"
     - name: systemuser
       system: True
     - name: differentkeyeduser
-      key: "https://github.com/barry.keys"
+      key: "https://github.com/bvansomeren.keys"
       pubkey_location: "/etc/ssh/user_keys/differentkeyeduser.pub"

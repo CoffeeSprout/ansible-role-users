@@ -21,8 +21,12 @@ A list of users to be created on the system. For example:
       key: "{{lookup('file', 'admin.pub')}}"
     - name: barry
       key: "https://github.com/barry.keys"
+      key_options: "environment=\"SUPER=man\""
     - name: systemuser
-      system: True  
+      system: True
+    - name: differentkeyeduser
+      key: "{{lookup('file', 'differentkeyeduser.pub')}}"
+      pubkey_location: "/etc/ssh/user_keys/differentkeyeduser.pub"
 
 It's recommended you use the first format (lookup the pub file) and check the files in together with your playbook.
 
@@ -34,6 +38,19 @@ A simple list of strings which users should be root on the system. This manages 
     users_sudoersd_file: "{{ sudoersd_location }}/managed"
     
 Location of the sudoers.d file that contains our list of sudoers; This is overriden dynamically based on OS
+
+    users_pubkey_location: " ~/.ssh/authorized_keys"
+
+The location where the key should be uploaded to; Change this if you have setup SSHD to look elsewhere.
+This change is something you need to manage outside this role, as well as the folder.
+You might want to do this because of the following reasons:
+* To prevent the user from changing the keys or options you set on them
+* Because not every user has a home folder
+
+Changing the overall users\_pubkey\_location or the specific user pubkey\_location will make the key readonly to the user.
+This can also be triggered by adding lock\_key to the user.
+
+You can add further control to users by defining key\_options; They map to the default options in SSH: https://man.openbsd.org/sshd#AUTHORIZED_KEYS_FILE_FORMAT
 
 Dependencies
 ------------
@@ -55,6 +72,9 @@ Including an example of how to use your role (for instance, with variables passe
           key: "https://github.com/barry.keys"
         - name: systemuser
           system: True
+        - name: differentkeyeduser
+          key: "{{lookup('file', 'differentkeyeduser.pub')}}"
+          pubkey_location: "/etc/ssh/user_keys/differentkeyeduser.pub"
 
 License
 -------

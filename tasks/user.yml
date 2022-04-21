@@ -17,7 +17,10 @@
     user: "{{ _user.name }}"
     state: present
     key: "{{ _user.key }}"
-  when: '_user.key is defined'
+    key_options: "{{ _user.key_options | default(omit) }}"
+    path: "{{ _user.pubkey_location | default(users_pubkey_location) | default(omit) }}"
+    manage_dir: "{{ not ((users_pubkey_location is defined) or (_user.pubkey_location is defined)) }}"
+  when:  '_user.key is defined'
   tags:
   - authorized_keys
 
@@ -26,6 +29,16 @@
     user: "{{ _user.name }}"
     state: present
     key: "{{ lookup('file', _user.name+'.pub') }}"
-  when: '_user.key is not defined and _user.ssh'
+    key_options: "{{ _user.key_options | default(omit) }}"
+    path: "{{ _user.pubkey_location | default(users_pubkey_location) | default(omit) }}"
+    manage_dir: "{{ not ((users_pubkey_location is defined)  or (_user.pubkey_location is defined)) }}"
+  when: '_user.key is not defined and (_user.ssh | default(False))'
   tags:
   - authorized_keys
+
+- name: write protect keys
+  file:
+    path: "{{ _user.pubkey_location | default(users_pubkey_location) | default('/home/'+_user.name+'/.ssh/authorized_keys') }}"
+    mode: '0400'
+    state: file
+  when: '(users_pubkey_location is defined)  or (_user.pubkey_location is defined) or (_user.lock_key | default(False))'

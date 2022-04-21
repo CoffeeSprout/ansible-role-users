@@ -8,3 +8,5 @@ users: []
 sudo_users: []
 
 users_sudoersd_file: "{{ sudoersd_location }}/managed"
+
+#users_pubkey_location
