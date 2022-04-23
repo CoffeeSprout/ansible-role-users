@@ -17,7 +17,7 @@
     user: "{{ _user.name }}"
     state: present
     key: "{{ _user.key }}"
-    key_options: "{{ _user.key_options | default(omit) }}"
+    key_options: "{{ _user.key_options | default(users_default_key_option) | default(omit) }}"
     path: "{{ _user.pubkey_location | default(users_pubkey_location) | default(omit) }}"
     manage_dir: "{{ not ((users_pubkey_location is defined) or (_user.pubkey_location is defined)) }}"
   when:  '_user.key is defined'
@@ -29,7 +29,7 @@
     user: "{{ _user.name }}"
     state: present
     key: "{{ lookup('file', _user.name+'.pub') }}"
-    key_options: "{{ _user.key_options | default(omit) }}"
+    key_options: "{{  _user.key_options | default(users_default_key_option) | default(omit) }}"
     path: "{{ _user.pubkey_location | default(users_pubkey_location) | default(omit) }}"
     manage_dir: "{{ not ((users_pubkey_location is defined)  or (_user.pubkey_location is defined)) }}"
   when: '_user.key is not defined and (_user.ssh | default(False))'

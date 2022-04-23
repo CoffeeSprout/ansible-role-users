@@ -52,6 +52,12 @@ This can also be triggered by adding lock\_key to the user.
 
 You can add further control to users by defining key\_options; They map to the default options in SSH: https://man.openbsd.org/sshd#AUTHORIZED_KEYS_FILE_FORMAT
 
+It's also possible to set:
+
+    users_default_key_option
+
+This option will be set for all user keys (for example on a jumphost you would not allow logins, but you will alow proxyjump); If you define an option for the user it will override this default (For example for granting the admin full access)
+
 Dependencies
 ------------
 

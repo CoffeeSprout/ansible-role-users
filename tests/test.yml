@@ -3,6 +3,7 @@
   become: True
   roles:
     - role: coffeesprout.users
+      users_default_key_option: "environment=\"default\""
       users:
       - name: normal-user
       - name: admin

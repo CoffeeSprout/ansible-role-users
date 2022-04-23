@@ -9,4 +9,6 @@ sudo_users: []
 
 users_sudoersd_file: "{{ sudoersd_location }}/managed"
 
+#users_default_key_option
+
 #users_pubkey_location
