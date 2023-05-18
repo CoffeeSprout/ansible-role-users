@@ -9,13 +9,14 @@
     shell: "{{ _user.shell | default(omit) }}"
     home: "{{ _user.home | default(omit) }}"
     password: "{{ _user.password | default(omit) }}"
+    state: "{{ _user.state | default(omit) }}"
   tags:
   - users
 
 - name: setup authorized_keys for {{ _user.name }}
   authorized_key:
     user: "{{ _user.name }}"
-    state: present
+    state: "{{ _user.state | default(omit) }}"
     key: "{{ _user.key }}"
     key_options: "{{ _user.key_options | default(users_default_key_option) | default(omit) }}"
     path: "{{ _user.pubkey_location | default(users_pubkey_location) | default(omit) }}"
@@ -27,7 +28,7 @@
 - name: setup authorized_keys from pub in files for {{ _user.name }}
   authorized_key:
     user: "{{ _user.name }}"
-    state: present
+    state: "{{ _user.state | default(omit) }}"
     key: "{{ lookup('file', _user.name+'.pub') }}"
     key_options: "{{  _user.key_options | default(users_default_key_option) | default(omit) }}"
     path: "{{ _user.pubkey_location | default(users_pubkey_location) | default(omit) }}"

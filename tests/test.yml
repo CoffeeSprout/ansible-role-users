@@ -33,3 +33,7 @@
     - name: differentkeyeduser
       key: "https://github.com/bvansomeren.keys"
       pubkey_location: "/etc/ssh/user_keys/differentkeyeduser.pub"
+    - name: normal-user
+      state: absent
+    - name: barry2
+      state: absent
