@@ -24,6 +24,7 @@
   when:  '_user.key is defined'
   tags:
   - authorized_keys
+  ignore_errors: true
 
 - name: setup authorized_keys from pub in files for {{ _user.name }}
   authorized_key:
@@ -36,6 +37,7 @@
   when: '_user.key is not defined and (_user.ssh | default(False))'
   tags:
   - authorized_keys
+  ignore_errors: true
 
 - name: write protect keys
   file:
