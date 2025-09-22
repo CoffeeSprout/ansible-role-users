@@ -1,0 +1,99 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+
+  vars:
+    users_default_key_option: "no-port-forwarding"
+
+    users:
+      # Basic user with inline SSH key
+      - name: testuser1
+        shell: /bin/bash
+        state: present
+        key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDMnVkqJu9IJf0j=="
+
+      # User with SSH key from file
+      - name: testuser2
+        shell: /bin/bash
+        state: present
+        ssh: true  # This will look for testuser2.pub in files/
+
+      # User with custom group
+      - name: testuser3
+        shell: /bin/bash
+        state: present
+        group: developers
+        ssh: true  # This will look for testuser3.pub in files/
+
+      # System user with custom home and group
+      - name: testuser4
+        shell: /bin/sh
+        state: present
+        system: true
+        home: /var/lib/testuser4
+        group: sysgroup
+        ssh: true  # This will look for testuser4.pub in files/
+
+      # User with custom SSH key location and lock
+      - name: customuser
+        shell: /bin/bash
+        state: present
+        ssh: true  # This will look for customuser.pub in files/
+        pubkey_location: /etc/ssh/user_keys/customuser.pub
+        lock_key: true
+
+      # User with key options override
+      - name: optionsuser
+        shell: /bin/bash
+        state: present
+        key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDOptionsUserKey777=="
+        key_options: "command=\"/bin/date\",no-pty"
+
+    sudo_users:
+      - testuser1
+      - testuser3
+
+  pre_tasks:
+    - name: Gather facts
+      setup:
+
+    - name: Create custom SSH key directory
+      file:
+        path: /etc/ssh/user_keys
+        state: directory
+        mode: '0755'
+
+  roles:
+    - role: coffeesprout.users
+
+  post_tasks:
+    - name: Verify users were created
+      user:
+        name: "{{ item }}"
+        state: present
+      register: user_check
+      loop:
+        - testuser1
+        - testuser2
+
+    - name: Check if users exist
+      command: id {{ item }}
+      register: id_check
+      loop:
+        - testuser1
+        - testuser2
+      changed_when: false
+
+    - name: Verify sudo configuration exists
+      stat:
+        path: /etc/sudoers.d/managed
+      register: sudo_config
+
+    - name: Display user verification
+      debug:
+        msg: "User {{ item }} exists"
+      loop:
+        - testuser1
+        - testuser2
+      when: id_check is succeeded

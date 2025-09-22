@@ -2,6 +2,8 @@ galaxy_info:
   author: Barry van Someren
   description: Setup local OS level users. Mainly meant for admin accounts, rsync users etc.
   company: CoffeeSprout ICT Services
+  role_name: users
+  namespace: coffeesprout
 
   license: BSD
 
@@ -10,6 +12,11 @@ galaxy_info:
   platforms:
   - name: EL
     versions:
+    - 7
+    - 8
+    - 9
+  - name: Debian
+    versions:
     - all
   - name: FreeBSD
     versions:
@@ -17,6 +24,8 @@ galaxy_info:
 
   galaxy_tags:
   - centos
+  - almalinux
+  - debian
   - freebsd
   - user
   - authorizedkey

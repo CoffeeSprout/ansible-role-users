@@ -1,0 +1,49 @@
+---
+- name: Prepare Debian
+  hosts: debian12-users
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Update package cache (Debian)
+      raw: "apt-get update"
+
+    - name: Install Python and packages (Debian)
+      raw: "apt-get install -y python3 sudo openssh-client"
+
+    - name: Gather facts
+      setup:
+
+- name: Prepare AlmaLinux
+  hosts: alma9-users
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Install Python and packages (AlmaLinux)
+      raw: "dnf install -y python3 sudo openssh-clients"
+
+    - name: Gather facts
+      setup:
+
+- name: Create test groups on all hosts
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Create developers group for testing
+      group:
+        name: developers
+        state: present
+
+    - name: Create testgroup for custom group testing
+      group:
+        name: testgroup
+        state: present
+
+    - name: Create system group for system user testing
+      group:
+        name: sysgroup
+        system: true
+        state: present

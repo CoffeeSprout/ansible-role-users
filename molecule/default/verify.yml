@@ -1,0 +1,340 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+
+  tasks:
+    # Test user removal functionality (create then remove a test user)
+    - name: Create temporary user for removal testing
+      user:
+        name: tempuser
+        shell: /bin/bash
+        state: present
+
+    - name: Test user removal by removing tempuser
+      user:
+        name: tempuser
+        state: absent
+        remove: true
+
+    # Basic user existence tests
+    - name: Check that all expected users exist
+      command: "id {{ item }}"
+      register: user_existence_check
+      changed_when: false
+      loop:
+        - testuser1
+        - testuser2
+        - testuser3
+        - testuser4
+        - customuser
+        - optionsuser
+
+    - name: Verify all users were created successfully
+      assert:
+        that:
+          - item.rc == 0
+        fail_msg: "User {{ item.item }} was not created"
+        success_msg: "User {{ item.item }} exists"
+      loop: "{{ user_existence_check.results }}"
+
+    # Test user removal
+    - name: Check that tempuser was removed
+      command: id tempuser
+      register: tempuser_check
+      changed_when: false
+      failed_when: false
+
+    - name: Verify tempuser was removed successfully
+      assert:
+        that:
+          - tempuser_check.rc != 0
+        fail_msg: "tempuser was not removed"
+        success_msg: "tempuser was successfully removed"
+
+    # Shell configuration tests
+    - name: Check shell configurations
+      shell: "getent passwd {{ item.user }} | cut -d: -f7"
+      register: shell_checks
+      changed_when: false
+      loop:
+        - { user: "testuser1", shell: "/bin/bash" }
+        - { user: "testuser2", shell: "/bin/bash" }
+        - { user: "testuser3", shell: "/bin/bash" }
+        - { user: "testuser4", shell: "/bin/sh" }
+        - { user: "customuser", shell: "/bin/bash" }
+        - { user: "optionsuser", shell: "/bin/bash" }
+
+    - name: Verify shell configurations
+      assert:
+        that:
+          - "item.item.shell in item.stdout"
+        fail_msg: "{{ item.item.user }} does not have {{ item.item.shell }} shell"
+        success_msg: "{{ item.item.user }} has correct shell"
+      loop: "{{ shell_checks.results }}"
+
+    # Group membership tests
+    - name: Check group memberships
+      command: "groups {{ item.user }}"
+      register: group_checks
+      changed_when: false
+      loop:
+        - { user: "testuser3", group: "developers" }
+        - { user: "testuser4", group: "sysgroup" }
+
+    - name: Verify group memberships
+      assert:
+        that:
+          - "item.item.group in item.stdout"
+        fail_msg: "{{ item.item.user }} is not in {{ item.item.group }} group"
+        success_msg: "{{ item.item.user }} is in {{ item.item.group }} group"
+      loop: "{{ group_checks.results }}"
+
+    # System user test
+    - name: Check if testuser4 is a system user
+      shell: "getent passwd testuser4 | cut -d: -f3"
+      register: testuser4_uid
+      changed_when: false
+
+    - name: Verify testuser4 is a system user (UID < 1000)
+      assert:
+        that:
+          - testuser4_uid.stdout | int < 1000
+        fail_msg: "testuser4 is not a system user"
+        success_msg: "testuser4 is correctly configured as system user"
+
+    # Custom home directory test
+    - name: Check testuser4 custom home directory
+      shell: "getent passwd testuser4 | cut -d: -f6"
+      register: testuser4_home
+      changed_when: false
+
+    - name: Verify testuser4 has custom home
+      assert:
+        that:
+          - "'/var/lib/testuser4' in testuser4_home.stdout"
+        fail_msg: "testuser4 does not have custom home directory"
+        success_msg: "testuser4 has correct custom home directory"
+
+    # Sudo configuration tests
+    - name: Check sudo configuration file exists
+      stat:
+        path: /etc/sudoers.d/managed
+      register: sudo_file
+
+    - name: Verify sudo configuration exists
+      assert:
+        that:
+          - sudo_file.stat.exists
+        fail_msg: "Sudo configuration file was not created"
+        success_msg: "Sudo configuration file exists"
+
+    - name: Check sudo configuration content
+      command: cat /etc/sudoers.d/managed
+      register: sudo_content
+      changed_when: false
+
+    - name: Verify sudo users have access
+      assert:
+        that:
+          - "'testuser1' in sudo_content.stdout"
+          - "'testuser3' in sudo_content.stdout"
+          - "'testuser2' not in sudo_content.stdout"
+        fail_msg: "Sudo configuration is incorrect"
+        success_msg: "Sudo configuration is correct"
+
+    # SSH key tests - Standard locations
+    - name: Check SSH authorized_keys for standard users
+      stat:
+        path: "/home/{{ item }}/.ssh/authorized_keys"
+      register: standard_ssh_keys
+      loop:
+        - testuser1
+        - testuser2
+        - testuser3
+        - optionsuser
+
+    - name: Verify SSH keys exist for standard users
+      assert:
+        that:
+          - item.stat.exists
+        fail_msg: "SSH authorized_keys not created for {{ item.item }}"
+        success_msg: "SSH authorized_keys exists for {{ item.item }}"
+      loop: "{{ standard_ssh_keys.results }}"
+
+    # SSH key test - Custom location
+    - name: Check SSH key at custom location for customuser
+      stat:
+        path: /etc/ssh/user_keys/customuser.pub
+      register: custom_ssh_key
+
+    - name: Verify custom SSH key location
+      assert:
+        that:
+          - custom_ssh_key.stat.exists
+        fail_msg: "Custom SSH key location not created for customuser"
+        success_msg: "Custom SSH key location exists for customuser"
+
+    # SSH key permissions test
+    - name: Check SSH key permissions for locked key
+      stat:
+        path: /etc/ssh/user_keys/customuser.pub
+      register: locked_key_perms
+
+    - name: Verify locked key has correct permissions
+      assert:
+        that:
+          - locked_key_perms.stat.mode == "0400"
+        fail_msg: "Locked SSH key does not have 0400 permissions"
+        success_msg: "Locked SSH key has correct 0400 permissions"
+
+    # SSH key options tests
+    - name: Check SSH key content for default options
+      command: "cat /home/testuser1/.ssh/authorized_keys"
+      register: testuser1_key_content
+      changed_when: false
+
+    - name: Verify default key options are applied
+      assert:
+        that:
+          - "'no-port-forwarding' in testuser1_key_content.stdout"
+        fail_msg: "Default key options not applied to testuser1"
+        success_msg: "Default key options correctly applied to testuser1"
+
+    - name: Check SSH key content for custom options
+      command: "cat /home/optionsuser/.ssh/authorized_keys"
+      register: optionsuser_key_content
+      changed_when: false
+
+    - name: Verify custom key options override defaults
+      assert:
+        that:
+          - "'command=\"/bin/date\"' in optionsuser_key_content.stdout"
+          - "'no-pty' in optionsuser_key_content.stdout"
+          - "'no-port-forwarding' not in optionsuser_key_content.stdout"
+        fail_msg: "Custom key options not correctly applied to optionsuser"
+        success_msg: "Custom key options correctly override defaults for optionsuser"
+
+    # System user SSH key test
+    - name: Check SSH authorized_keys for system user
+      stat:
+        path: /var/lib/testuser4/.ssh/authorized_keys
+      register: system_user_ssh_key
+
+    - name: Verify SSH key exists for system user with custom home
+      assert:
+        that:
+          - system_user_ssh_key.stat.exists
+        fail_msg: "SSH authorized_keys not created for system user testuser4"
+        success_msg: "SSH authorized_keys exists for system user testuser4"
+
+    # Validate sudoers file syntax
+    - name: Validate sudoers file syntax
+      command: visudo -cf /etc/sudoers.d/managed
+      register: sudoers_validation
+      changed_when: false
+
+    - name: Verify sudoers file has valid syntax
+      assert:
+        that:
+          - sudoers_validation.rc == 0
+        fail_msg: "Sudoers file has invalid syntax"
+        success_msg: "Sudoers file has valid syntax"
+
+    # Negative test scenarios
+    - name: Verify tempuser home directory was removed
+      stat:
+        path: /home/tempuser
+      register: tempuser_home
+
+    - name: Assert tempuser home directory does not exist
+      assert:
+        that:
+          - not tempuser_home.stat.exists
+        fail_msg: "Removed user's home directory still exists"
+        success_msg: "Removed user's home directory was properly cleaned up"
+
+    - name: Verify users without SSH keys don't have .ssh directories
+      stat:
+        path: "/home/{{ item }}/.ssh"
+      register: nossh_directories
+      loop:
+        - testuser1  # This one should have .ssh because it has a key
+        - testuser2  # This one should have .ssh because it has ssh: true
+
+    # Test that users not in sudo_users list are not in sudoers file
+    - name: Verify non-sudo users are not in sudoers file
+      assert:
+        that:
+          - "'testuser2' not in sudo_content.stdout"
+          - "'testuser4' not in sudo_content.stdout"
+          - "'customuser' not in sudo_content.stdout"
+          - "'optionsuser' not in sudo_content.stdout"
+        fail_msg: "Non-sudo users found in sudoers file"
+        success_msg: "Only specified sudo users are in sudoers file"
+
+    # Verify standard users don't have write access to locked SSH keys
+    - name: Check ownership of locked SSH key
+      stat:
+        path: /etc/ssh/user_keys/customuser.pub
+      register: locked_key_ownership
+
+    - name: Verify locked SSH key is owned by user but not writable
+      assert:
+        that:
+          - locked_key_ownership.stat.pw_name == "customuser"
+          - locked_key_ownership.stat.gr_name == "customuser"
+          - locked_key_ownership.stat.mode == "0400"
+        fail_msg: "Locked SSH key ownership or permissions are incorrect"
+        success_msg: "Locked SSH key is properly locked (0400 permissions)"
+
+    # Test that standard users cannot write to their authorized_keys when locked
+    - name: Verify standard authorized_keys files are writable by user (not locked)
+      stat:
+        path: "/home/{{ item }}/.ssh/authorized_keys"
+      register: standard_key_perms
+      loop:
+        - testuser1
+        - testuser2
+        - testuser3
+        - optionsuser
+
+    - name: Assert standard SSH keys have user-writable permissions
+      assert:
+        that:
+          - item.stat.mode != "0400"  # Should be more permissive than 0400
+        fail_msg: "Standard SSH key for {{ item.item }} is too restrictive"
+        success_msg: "Standard SSH key for {{ item.item }} has appropriate permissions"
+      loop: "{{ standard_key_perms.results }}"
+
+    # Verify that groups we created are actually in use
+    - name: Check that test groups exist and are used
+      command: "getent group {{ item }}"
+      register: group_existence
+      changed_when: false
+      loop:
+        - developers
+        - sysgroup
+        - testgroup
+
+    - name: Verify all test groups exist
+      assert:
+        that:
+          - item.rc == 0
+        fail_msg: "Test group {{ item.item }} does not exist"
+        success_msg: "Test group {{ item.item }} exists"
+      loop: "{{ group_existence.results }}"
+
+    # Edge case: Verify that unused group (testgroup) has no members
+    - name: Check testgroup has no members
+      command: "getent group testgroup"
+      register: empty_group_check
+      changed_when: false
+
+    - name: Verify testgroup is empty (no users assigned to it)
+      assert:
+        that:
+          - "':' in empty_group_check.stdout"  # Group line should end with just ':'
+          - empty_group_check.stdout.split(':')[3] == ""  # Fourth field should be empty
+        fail_msg: "testgroup should be empty but has members"
+        success_msg: "testgroup is correctly empty"
