@@ -30,3 +30,10 @@
   tags:
   - users
   - sudo
+
+- name: Generate documentation
+  include_tasks: documentation.yml
+  when: doc_generate | default(true)
+  tags:
+    - docs
+    - documentation

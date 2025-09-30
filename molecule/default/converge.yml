@@ -4,6 +4,9 @@
   become: true
 
   vars:
+    # Documentation output for testing
+    doc_output_dir: "/tmp/ansible-docs"
+
     users_default_key_option: "no-port-forwarding"
 
     users:

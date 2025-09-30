@@ -1,0 +1,43 @@
+{
+  "role": "coffeesprout.users",
+  "server": "{{ inventory_hostname }}",
+  "configuration": {
+    "sudoers_file": "{{ users_sudoersd_file | default('/etc/sudoers.d/managed') }}",
+    "default_key_option": "{{ users_default_key_option | default('') }}"
+  },
+  "users": [
+{% for user in users %}
+    {
+      "name": "{{ user.name }}",
+      "shell": "{{ user.shell | default('/bin/bash') }}",
+      "home": "{{ user.home | default('/home/' + user.name) }}",
+      "group": "{{ user.group | default(user.name) }}",
+      "system_user": {{ user.system | default(false) | lower }},
+      "state": "{{ user.state | default('present') }}",
+      "has_ssh_key": {{ (user.key is defined or user.ssh is defined) | lower }},
+{% if user.key_options is defined %}
+      "key_options": "{{ user.key_options | replace('"', '\\"') }}",
+{% endif %}
+{% if user.pubkey_location is defined %}
+      "pubkey_location": "{{ user.pubkey_location }}",
+{% endif %}
+{% if user.lock_key is defined %}
+      "lock_key": {{ user.lock_key | lower }},
+{% endif %}
+      "has_sudo": {{ (user.name in sudo_users) | lower }}
+    }{% if not loop.last %},{% endif %}
+
+{% endfor %}
+  ],
+  "sudo_users": [
+{% for user in sudo_users %}
+    "{{ user }}"{% if not loop.last %},{% endif %}
+
+{% endfor %}
+  ],
+  "summary": {
+    "total_users": {{ users | length }},
+    "sudo_users_count": {{ sudo_users | length }},
+    "users_with_ssh_keys": {{ users | selectattr('key', 'defined') | list | length + users | selectattr('ssh', 'defined') | list | length }}
+  }
+}

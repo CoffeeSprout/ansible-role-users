@@ -338,3 +338,105 @@
           - empty_group_check.stdout.split(':')[3] == ""  # Fourth field should be empty
         fail_msg: "testgroup should be empty but has members"
         success_msg: "testgroup is correctly empty"
+
+    # Documentation generation tests
+    - name: Check that users markdown documentation was generated
+      stat:
+        path: "/tmp/ansible-docs/{{ inventory_hostname }}/users.md"
+      register: users_md_doc
+      delegate_to: localhost
+      become: false
+
+    - name: Verify markdown documentation exists
+      assert:
+        that:
+          - users_md_doc.stat.exists
+        fail_msg: "Users markdown documentation was not generated"
+        success_msg: "Users markdown documentation exists"
+
+    - name: Check that users JSON documentation was generated
+      stat:
+        path: "/tmp/ansible-docs/{{ inventory_hostname }}/users.json"
+      register: users_json_doc
+      delegate_to: localhost
+      become: false
+
+    - name: Verify JSON documentation exists
+      assert:
+        that:
+          - users_json_doc.stat.exists
+        fail_msg: "Users JSON documentation was not generated"
+        success_msg: "Users JSON documentation exists"
+
+    - name: Read markdown documentation content
+      slurp:
+        path: "/tmp/ansible-docs/{{ inventory_hostname }}/users.md"
+      register: users_md_content
+      delegate_to: localhost
+      become: false
+
+    - name: Verify documentation contains key user information
+      assert:
+        that:
+          - "'testuser1' in (users_md_content.content | b64decode)"
+          - "'testuser2' in (users_md_content.content | b64decode)"
+          - "'testuser3' in (users_md_content.content | b64decode)"
+          - "'coffeesprout.users' in (users_md_content.content | b64decode)"
+          - "'User Management' in (users_md_content.content | b64decode)"
+        fail_msg: "Documentation missing expected user information"
+        success_msg: "Documentation contains expected user information"
+
+    - name: Verify documentation contains sudo information
+      assert:
+        that:
+          - "'Sudo Access' in (users_md_content.content | b64decode)"
+          - "'testuser1' in (users_md_content.content | b64decode)"
+          - "'testuser3' in (users_md_content.content | b64decode)"
+        fail_msg: "Documentation missing sudo user information"
+        success_msg: "Documentation contains sudo user information"
+
+    - name: Verify documentation contains SSH key information
+      assert:
+        that:
+          - "'no-port-forwarding' in (users_md_content.content | b64decode)"
+          - "'SSH Key Configuration' in (users_md_content.content | b64decode)"
+        fail_msg: "Documentation missing SSH key configuration"
+        success_msg: "Documentation contains SSH key configuration"
+
+    - name: Read JSON documentation content
+      slurp:
+        path: "/tmp/ansible-docs/{{ inventory_hostname }}/users.json"
+      register: users_json_content
+      delegate_to: localhost
+      become: false
+
+    - name: Parse JSON documentation
+      set_fact:
+        users_json_data: "{{ users_json_content.content | b64decode | from_json }}"
+
+    - name: Verify JSON structure is valid
+      assert:
+        that:
+          - users_json_data.role == "coffeesprout.users"
+          - users_json_data.server == inventory_hostname
+          - users_json_data.users is defined
+          - users_json_data.sudo_users is defined
+          - users_json_data.summary is defined
+        fail_msg: "JSON documentation structure is invalid"
+        success_msg: "JSON documentation structure is valid"
+
+    - name: Verify JSON contains all configured users
+      assert:
+        that:
+          - users_json_data.summary.total_users == 6
+          - users_json_data.summary.sudo_users_count == 2
+        fail_msg: "JSON summary counts are incorrect"
+        success_msg: "JSON summary counts are correct"
+
+    - name: Verify documentation files have correct permissions
+      assert:
+        that:
+          - users_md_doc.stat.mode == "0644"
+          - users_json_doc.stat.mode == "0644"
+        fail_msg: "Documentation files have incorrect permissions"
+        success_msg: "Documentation files have correct permissions"

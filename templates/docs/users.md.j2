@@ -1,0 +1,183 @@
+# User Management
+
+**Server**: {{ inventory_hostname }}
+**Role**: coffeesprout.users
+
+## User Accounts
+
+{% if users | length > 0 %}
+| Username | Shell | Home | Group | System User | SSH Key | State |
+|----------|-------|------|-------|-------------|---------|-------|
+{% for user in users %}
+| {{ user.name }} | {{ user.shell | default('/bin/bash') }} | {{ user.home | default('/home/' + user.name) }} | {{ user.group | default(user.name) }} | {{ user.system | default('no') }} | {% if user.key is defined or user.ssh is defined %}✓{% else %}-{% endif %} | {{ user.state | default('present') }} |
+{% endfor %}
+{% else %}
+No users configured
+{% endif %}
+
+## Sudo Access
+
+{% if sudo_users | length > 0 %}
+The following users have sudo privileges:
+{% for user in sudo_users %}
+- {{ user }}
+{% endfor %}
+
+**Sudoers File**: {{ users_sudoersd_file | default('/etc/sudoers.d/managed') }}
+{% else %}
+No sudo users configured
+{% endif %}
+
+## SSH Key Configuration
+
+{% if users_default_key_option is defined %}
+**Default Key Options**: `{{ users_default_key_option }}`
+{% endif %}
+
+### Key Details
+
+{% for user in users %}
+{% if user.key is defined or user.ssh is defined %}
+#### {{ user.name }}
+- **Key Location**: {{ user.pubkey_location | default('~/.ssh/authorized_keys') }}
+{% if user.key_options is defined %}
+- **Key Options**: `{{ user.key_options }}`
+{% elif users_default_key_option is defined %}
+- **Key Options**: `{{ users_default_key_option }}` (default)
+{% endif %}
+{% if user.lock_key is defined and user.lock_key %}
+- **Key Locked**: Yes (file is read-only)
+{% endif %}
+{% if user.key is defined %}
+- **Key Type**: Inline key configured
+{% elif user.ssh is defined and user.ssh %}
+- **Key Type**: From file `{{ user.name }}.pub`
+{% endif %}
+
+{% endif %}
+{% endfor %}
+
+## User Management Commands
+
+### Add User to Sudo
+```bash
+# Add user to the sudo_users list in your playbook vars and re-run
+```
+
+### Remove User
+```bash
+# Set state: absent in your playbook vars and re-run
+```
+
+### Reset User Password
+```bash
+# SSH to server and run
+sudo passwd {{ users[0].name if users | length > 0 else 'username' }}
+```
+
+### View User Information
+```bash
+# Get user details
+id {{ users[0].name if users | length > 0 else 'username' }}
+
+# Check user's groups
+groups {{ users[0].name if users | length > 0 else 'username' }}
+
+# View last login
+lastlog -u {{ users[0].name if users | length > 0 else 'username' }}
+```
+
+### SSH Key Management
+
+```bash
+# View authorized keys
+{% if users | length > 0 %}
+sudo cat ~{{ users[0].name }}/.ssh/authorized_keys
+{% else %}
+sudo cat ~username/.ssh/authorized_keys
+{% endif %}
+
+# Test SSH key authentication
+{% if users | length > 0 %}
+ssh -i /path/to/private/key {{ users[0].name }}@{{ inventory_hostname }}
+{% else %}
+ssh -i /path/to/private/key username@{{ inventory_hostname }}
+{% endif %}
+```
+
+### Sudo Configuration
+
+```bash
+# View sudo configuration
+sudo cat {{ users_sudoersd_file | default('/etc/sudoers.d/managed') }}
+
+# Test sudo access (as a sudo user)
+sudo -l
+
+# Validate sudo configuration
+sudo visudo -c
+```
+
+## Security Notes
+
+{% if users_default_key_option is defined %}
+- SSH key restrictions enabled: `{{ users_default_key_option }}`
+{% endif %}
+{% if sudo_users | length > 0 %}
+- {{ sudo_users | length }} user(s) have sudo access
+{% else %}
+- No users have sudo access configured
+{% endif %}
+- Total managed users: {{ users | length }}
+- Password authentication controlled by SSH configuration (see sshd.md)
+
+## Troubleshooting
+
+### Cannot Login with SSH Key
+```bash
+# Check authorized_keys permissions (should be 600)
+{% if users | length > 0 %}
+ls -la ~{{ users[0].name }}/.ssh/authorized_keys
+{% else %}
+ls -la ~/.ssh/authorized_keys
+{% endif %}
+
+# Check .ssh directory permissions (should be 700)
+{% if users | length > 0 %}
+ls -ld ~{{ users[0].name }}/.ssh
+{% else %}
+ls -ld ~/.ssh
+{% endif %}
+
+# View SSH authentication logs
+sudo journalctl -u sshd | grep -i {{ users[0].name if users | length > 0 else 'username' }}
+```
+
+### Sudo Not Working
+```bash
+# Verify user is in sudo_users list
+grep {{ users[0].name if users | length > 0 else 'username' }} {{ users_sudoersd_file | default('/etc/sudoers.d/managed') }}
+
+# Check sudo configuration syntax
+sudo visudo -c
+
+# View sudo logs
+sudo journalctl | grep sudo | grep {{ users[0].name if users | length > 0 else 'username' }}
+```
+
+### User Account Locked
+```bash
+# Check if account is locked
+{% if users | length > 0 %}
+sudo passwd -S {{ users[0].name }}
+{% else %}
+sudo passwd -S username
+{% endif %}
+
+# Unlock account
+{% if users | length > 0 %}
+sudo passwd -u {{ users[0].name }}
+{% else %}
+sudo passwd -u username
+{% endif %}
+```
