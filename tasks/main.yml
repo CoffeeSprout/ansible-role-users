@@ -8,7 +8,10 @@
 - name: ensure OS specifics are included
   include_vars: "{{ item }}"
   with_first_found:
-  - "{{ ansible_os_family }}.yml"
+    - files:
+        - "{{ ansible_os_family }}.yml"
+      paths:
+        - "{{ role_path }}/vars"
   tags:
   - always
 
