@@ -1,6 +1,6 @@
 ---
 - name: Prepare Debian
-  hosts: debian12-users
+  hosts: debian*-users
   become: true
   gather_facts: false
 
@@ -14,14 +14,26 @@
     - name: Gather facts
       setup:
 
-- name: Prepare AlmaLinux
+- name: Prepare AlmaLinux 9
   hosts: alma9-users
   become: true
   gather_facts: false
 
   tasks:
-    - name: Install Python and packages (AlmaLinux)
+    - name: Install Python and packages (AlmaLinux 9)
       raw: "dnf install -y python3 sudo openssh-clients"
+
+    - name: Gather facts
+      setup:
+
+- name: Prepare AlmaLinux 8
+  hosts: alma8-users
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Install Python 3.11 and packages (AlmaLinux 8)
+      raw: "dnf install -y python3.11 sudo openssh-clients && alternatives --set python3 /usr/bin/python3.11"
 
     - name: Gather facts
       setup:

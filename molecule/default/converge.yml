@@ -58,6 +58,18 @@
         shell: /bin/bash
         state: present
 
+      # Comprehensive user testing all new parameters
+      - name: fullfeatures
+        uid: 9999
+        groups: adm,users
+        append: true
+        comment: "Test user with all features"
+        shell: /bin/bash
+        home: /home/fullfeatures
+        create_home: true
+        state: present
+        key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDFullFeatures999=="
+
     sudo_users:
       - testuser1
       - testuser3

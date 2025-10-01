@@ -9,6 +9,16 @@ platforms:
     pre_build_image: true
     command: sleep infinity
 
+  - name: debian13-users
+    image: debian:13
+    pre_build_image: true
+    command: sleep infinity
+
+  - name: alma8-users
+    image: almalinux:8
+    pre_build_image: true
+    command: sleep infinity
+
   - name: alma9-users
     image: almalinux:9
     pre_build_image: true
@@ -20,6 +30,11 @@ provisioner:
     host_vars:
       debian12-users:
         ansible_user: root
+      debian13-users:
+        ansible_user: root
+      alma8-users:
+        ansible_user: root
+        ansible_python_interpreter: /usr/bin/python3.11
       alma9-users:
         ansible_user: root
         ansible_python_interpreter: /usr/bin/python3

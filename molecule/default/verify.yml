@@ -43,6 +43,7 @@
         - testuser4
         - customuser
         - optionsuser
+        - fullfeatures
 
     - name: Verify all users were created successfully
       assert:
@@ -379,6 +380,81 @@
         fail_msg: "testgroup should be empty but has members"
         success_msg: "testgroup is correctly empty"
 
+    # Comprehensive new feature tests (fullfeatures user)
+    - name: Check fullfeatures user exists
+      command: id fullfeatures
+      register: fullfeatures_check
+      changed_when: false
+
+    - name: Verify fullfeatures user exists
+      assert:
+        that:
+          - fullfeatures_check.rc == 0
+        fail_msg: "fullfeatures user was not created"
+        success_msg: "fullfeatures user exists"
+
+    - name: Check fullfeatures user UID
+      shell: "getent passwd fullfeatures | cut -d: -f3"
+      register: fullfeatures_uid
+      changed_when: false
+
+    - name: Verify fullfeatures has custom UID 9999
+      assert:
+        that:
+          - fullfeatures_uid.stdout == "9999"
+        fail_msg: "fullfeatures user does not have UID 9999"
+        success_msg: "fullfeatures user has correct UID 9999"
+
+    - name: Check fullfeatures user comment/GECOS field
+      shell: "getent passwd fullfeatures | cut -d: -f5"
+      register: fullfeatures_comment
+      changed_when: false
+
+    - name: Verify fullfeatures has correct comment
+      assert:
+        that:
+          - "'Test user with all features' in fullfeatures_comment.stdout"
+        fail_msg: "fullfeatures user does not have correct comment field"
+        success_msg: "fullfeatures user has correct comment field"
+
+    - name: Check fullfeatures supplementary groups
+      command: groups fullfeatures
+      register: fullfeatures_groups
+      changed_when: false
+
+    - name: Verify fullfeatures is in supplementary groups
+      assert:
+        that:
+          - "'adm' in fullfeatures_groups.stdout"
+          - "'users' in fullfeatures_groups.stdout"
+        fail_msg: "fullfeatures user is not in required supplementary groups"
+        success_msg: "fullfeatures user is in correct supplementary groups (adm, users)"
+
+    - name: Check fullfeatures home directory exists
+      stat:
+        path: /home/fullfeatures
+      register: fullfeatures_home
+
+    - name: Verify fullfeatures home directory was created
+      assert:
+        that:
+          - fullfeatures_home.stat.exists
+          - fullfeatures_home.stat.isdir
+        fail_msg: "fullfeatures home directory was not created"
+        success_msg: "fullfeatures home directory exists"
+
+    - name: Check fullfeatures SSH key
+      stat:
+        path: /home/fullfeatures/.ssh/authorized_keys
+      register: fullfeatures_ssh
+
+    - name: Verify fullfeatures has SSH key configured
+      assert:
+        that:
+          - fullfeatures_ssh.stat.exists
+        fail_msg: "fullfeatures SSH key was not created"
+        success_msg: "fullfeatures SSH key exists"
+
     # Documentation generation tests
     - name: Check that users markdown documentation was generated
       stat:
@@ -468,7 +544,7 @@
     - name: Verify JSON contains all configured users
       assert:
         that:
-          - users_json_data.summary.total_users == 7
+          - users_json_data.summary.total_users == 8
           - users_json_data.summary.sudo_users_count == 2
         fail_msg: "JSON summary counts are incorrect"
         success_msg: "JSON summary counts are correct"

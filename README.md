@@ -29,10 +29,31 @@ A list of users to be created on the system. For example:
     - name: differentkeyeduser
       key: "{{lookup('file', 'differentkeyeduser.pub')}}"
       pubkey_location: "/etc/ssh/user_keys/differentkeyeduser.pub"
+    - name: nfsuser
+      uid: 5000
+      groups: docker,adm
+      append: true
+      comment: "NFS shared user account"
+      create_home: true
     - name: offboardeduser
       state: absent
 
 It's recommended you use the first format (lookup the pub file) and check the files in together with your playbook.
+
+Additional user attributes supported:
+
+- `uid`: Set a specific UID (useful for NFS shared home directories)
+- `groups`: Comma-separated list of supplementary groups
+- `append`: When true, adds to existing groups without removing user from other groups
+- `comment`: GECOS field description (e.g., "Service Account for Application X")
+- `create_home`: Explicitly control home directory creation (default: true for normal users, false for system users)
+- `expires`: Set account expiration date (epoch time or -1 for no expiration)
+- `shell`: User's login shell (e.g., /bin/bash, /bin/sh, /sbin/nologin)
+- `home`: Custom home directory path
+- `password`: Hashed password (use ansible-vault for security)
+- `system`: Create as system user (UID < 1000)
+- `state`: present or absent
+- `remove`: When state=absent, also remove home directory
 
     sudo_users: []
     
