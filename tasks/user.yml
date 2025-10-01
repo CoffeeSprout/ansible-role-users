@@ -10,6 +10,7 @@
     home: "{{ _user.home | default(omit) }}"
     password: "{{ _user.password | default(omit) }}"
     state: "{{ _user.state | default(omit) }}"
+    remove: "{{ _user.remove | default(omit) }}"
   tags:
   - users
 

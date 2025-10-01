@@ -53,6 +53,11 @@
         key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDOptionsUserKey777=="
         key_options: "command=\"/bin/date\",no-pty"
 
+      # User to test removal functionality
+      - name: removetest
+        shell: /bin/bash
+        state: present
+
     sudo_users:
       - testuser1
       - testuser3

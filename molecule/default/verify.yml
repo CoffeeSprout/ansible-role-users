@@ -17,6 +17,20 @@
         state: absent
         remove: true
 
+    # Test remove parameter via role (removetest user was created in converge)
+    - name: Remove removetest user via role with remove parameter
+      include_role:
+        name: coffeesprout.users
+      vars:
+        doc_generate: false  # Don't regenerate docs during removal test
+        users:
+          - name: removetest
+            state: absent
+            remove: yes
+        sudo_users:
+          - testuser1
+          - testuser3
+
     # Basic user existence tests
     - name: Check that all expected users exist
       command: "id {{ item }}"
@@ -254,6 +268,32 @@
         fail_msg: "Removed user's home directory still exists"
         success_msg: "Removed user's home directory was properly cleaned up"
 
+    # Test user removal with remove parameter (via role)
+    - name: Check that removetest user was removed
+      command: id removetest
+      register: removetest_check
+      changed_when: false
+      failed_when: false
+
+    - name: Verify removetest user was removed successfully
+      assert:
+        that:
+          - removetest_check.rc != 0
+        fail_msg: "removetest user was not removed"
+        success_msg: "removetest user was successfully removed"
+
+    - name: "Verify removetest home directory was removed (remove: yes)"
+      stat:
+        path: /home/removetest
+      register: removetest_home
+
+    - name: Assert removetest home directory does not exist
+      assert:
+        that:
+          - not removetest_home.stat.exists
+        fail_msg: "removetest home directory still exists (remove parameter not working)"
+        success_msg: "removetest home directory was properly removed (remove: yes worked)"
+
     - name: Verify users without SSH keys don't have .ssh directories
       stat:
         path: "/home/{{ item }}/.ssh"
@@ -428,7 +468,7 @@
     - name: Verify JSON contains all configured users
       assert:
         that:
-          - users_json_data.summary.total_users == 6
+          - users_json_data.summary.total_users == 7
           - users_json_data.summary.sudo_users_count == 2
         fail_msg: "JSON summary counts are incorrect"
         success_msg: "JSON summary counts are correct"
