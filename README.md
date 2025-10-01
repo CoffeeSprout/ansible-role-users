@@ -1,6 +1,8 @@
 coffeesprout.users
 ==================
 
+![Molecule Tests](https://github.com/CoffeeSprout/ansible-role-users/actions/workflows/molecule.yml/badge.svg)
+
 Setup local OS level users. Mainly meant for admin accounts, rsync users etc.
 Mostly just a wrapper around [ansible user](https://docs.ansible.com/ansible/latest/modules/user_module.html)
 
